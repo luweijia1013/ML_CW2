@@ -16,7 +16,7 @@ def add_saltnpeppar_noise(im,prop):
     return im2
 
 
-def neighbours(i,j,M,N,size=4):
+def neighbours(i,j,M,N,size=8):
     if size==4:
         if (i==0 and j==0):
            n=[(0,1), (1,0)]
@@ -62,7 +62,7 @@ def neighbours(i,j,M,N,size=4):
 def energy(target, neighbour_values, observed_value):
     bias = 0
     index_nei = 1
-    index_xy = 2
+    index_xy = 4
     #(0,1,2) for tmac2, loop5 (0.7,1)
     #(0,1,2) for pug, loop6 (0.7,1)
     energy = bias * target - index_nei * target * sum(neighbour_values) - index_xy * target * (observed_value - 0.5 )
