@@ -63,7 +63,7 @@ def neighbours(i,j,M,N,size=8):
 def energy(target, neighbour_values, observed_value):
     bias = 0
     index_nei = 1
-    index_xy = 4
+    index_xy = 8
     #(0,1,2) for tmac2, loop5 (0.7,1)
     #(0,1,2) for pug, loop6 (0.7,1)
     energy = bias * target - index_nei * target * sum(neighbour_values) - index_xy * target * (observed_value - 0.5 )
@@ -89,7 +89,7 @@ def icm(y):
     x = init(y)
     rows = len(y)
     cols = len(y[0]) #assume not empty
-    PASS = 100
+    PASS = 20
     for i in range(PASS):
         flag = True
         for m in range(rows):
@@ -122,6 +122,46 @@ def gibbs(y):
                     x[m][n] = 1
                 else:
                     x[m][n] = -1
+    return x
+
+def likelihood(target, observed_value):
+    sigma = 1
+    return 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - (target+1)/2),2) / (2 * math.pow(sigma,2)))
+
+def q(target, para_m_value, observed_value):
+    inside = 2 * (para_m_value + 0.5 * (likelihood(1, observed_value) - likelihood(-1, observed_value) ) )
+    # print (inside)
+    return 1 / (1 + np.exp(-inside))
+
+def variational_bayes(y):
+    x = init(y)
+    para_m = np.copy(y)
+    para_miu = np.copy(y)
+    para_w = 0.75
+    miu_init = 0
+    rows = len(y)
+    cols = len(y[0])  # assume not empty
+    PASS = 20
+    for m in range(rows):
+        for n in range(cols):
+            para_m[(m,n)] = 0
+            para_miu[(m,n)] = miu_init
+    # print (para_m,para_miu)
+    for i in range(PASS):
+        for m in range(rows):
+            for n in range(cols):
+                # if m == 80 and n == 80:
+                    # print(para_m[(m,n)],para_miu[(m,n)],i)
+                nei_len = len(neighbours(m,n,rows,cols))
+                para_m[(m,n)] = para_w/nei_len * sum(para_miu[index] for index in neighbours(m,n,rows,cols))
+                para_miu[(m,n)] = np.tanh(para_m[(m,n)] + 0.5 * (likelihood(1, y[(m,n)]) - likelihood(-1, y[(m,n)]) ) )
+    for m in range(rows):
+        for n in range(cols):
+            judge = q(1, para_m[(m,n)], y[(m,n)])
+            if judge > 0.5:
+                x[(m,n)] = 1
+            else:
+                x[(m,n)] = -1
     return x
 
 def gibbs_rand(y):
@@ -157,20 +197,25 @@ def init(im_noise):
 # proportion of pixels to alter
 prop = 0.7
 varSigma = 0.5
-im = imread('../pic/loli_grey.png')
+im = imread('../pic/pug2_grey.png')
 im = im/255
 fig = plt.figure()
-ax = fig.add_subplot(141)
+ax = fig.add_subplot(151)
 ax.imshow(im,cmap='gray')
 im_noise = add_gaussian_noise(im,prop,varSigma)
 #im_noise = add_saltnpeppar_noise(im,prop)
-ax2 = fig.add_subplot(142)
+ax2 = fig.add_subplot(152)
 ax2.imshow(im_noise,cmap='gray')
-x_im = gibbs_rand(im_noise)
-x_im2 = gibbs(im_noise)
-ax3 = fig.add_subplot(143)
-ax3.imshow(x_im,cmap='gray')
-ax4 = fig.add_subplot(144)
-ax4.imshow(x_im2,cmap='gray')
+im_icm = icm(im_noise)
+ax3 = fig.add_subplot(153)
+ax3.imshow(im_icm,cmap='gray')
+im_gibbs = gibbs(im_noise)
+# im_gibbs = gibbs_rand(im_noise)
+ax4 = fig.add_subplot(154)
+ax4.imshow(im_gibbs,cmap='gray')
+im_vb = variational_bayes(im_noise)
+ax5 = fig.add_subplot(155)
+ax5.imshow(im_vb,cmap='gray')
+
 plt.show()
 
