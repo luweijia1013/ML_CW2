@@ -60,18 +60,6 @@ def neighbours(i,j,M,N,size=8):
         return n
     return -1
 
-def energy(target, neighbour_values, observed_value):
-    bias = 0
-    index_nei = 1
-    index_xy = 4
-    #(0,1,2) for tmac2, loop5 (0.7,1)
-    #(0,1,2) for pug, loop6 (0.7,1)
-    energy = bias * target - index_nei * target * sum(neighbour_values) - index_xy * target * (observed_value - 0.5 )
-    return energy
-
-def prob(target, neighbour_values, observed_value):
-    return -energy(target, neighbour_values, observed_value)#simplify the prob for convinience
-
 
 def prob_gibbs(target, neighbour_values, observed_value):
     index_nei = 4/len(neighbour_values)
@@ -84,28 +72,6 @@ def prob_gibbs(target, neighbour_values, observed_value):
     result = (proby_givenx * probx_givenx)/(proby_givenx * probx_givenx + proby_givenmx * probmx_givenx)
     # print(target,nei_similarity,observed_value,result)
     return result
-
-def icm(y):
-    x = init(y)
-    rows = len(y)
-    cols = len(y[0]) #assume not empty
-    PASS = 100
-    for i in range(PASS):
-        flag = True
-        for m in range(rows):
-            for n in range(cols):
-                ori = x[m][n]
-                nei = [x[i] for i in neighbours(m,n,rows,cols)]
-                if prob(1,nei,y[m][n]) > prob(-1,nei,y[m][n]):
-                    x[m][n] = 1
-                else:
-                    x[m][n] = -1
-                if flag and (x[m][n] != ori):
-                    flag = False
-        if flag:
-            print('stop in loop ', i)
-            return x
-    return x
 
 def gibbs(y):
     x = init(y)
@@ -142,6 +108,7 @@ def gibbs_rand(y):
             x[m][n] = -1
     return x
 
+
 def init(im_noise):
     thresh = 0.5
     x_im = im_noise
@@ -166,8 +133,8 @@ im_noise = add_gaussian_noise(im,prop,varSigma)
 #im_noise = add_saltnpeppar_noise(im,prop)
 ax2 = fig.add_subplot(142)
 ax2.imshow(im_noise,cmap='gray')
-x_im = gibbs_rand(im_noise)
-x_im2 = gibbs(im_noise)
+x_im = gibbs(im_noise)
+x_im2 = gibbs_rand(im_noise)
 ax3 = fig.add_subplot(143)
 ax3.imshow(x_im,cmap='gray')
 ax4 = fig.add_subplot(144)
