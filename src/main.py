@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.misc import imread
@@ -71,6 +72,19 @@ def energy(target, neighbour_values, observed_value):
 def prob(target, neighbour_values, observed_value):
     return -energy(target, neighbour_values, observed_value)#simplify the prob for convinience
 
+
+def prob_gibbs(target, neighbour_values, observed_value):
+    index_nei = 3/len(neighbour_values)
+    nei_similarity = sum(target * neighbour_values)
+    probx_givenx = 1 / (1 + math.exp(-nei_similarity * index_nei)) #sigmoid #probx = 1 / (1 + math.exp(-nei_energy)) * math.pow(0.5, len(neighbour_values))
+    probmx_givenx = 1 - probx_givenx
+    sigma = 1
+    proby_givenx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - (target+1)/2),2) / (2 * math.pow(sigma,2)))
+    proby_givenmx = 1 / (sigma * math.sqrt(2 * math.pi)) * math.exp(-math.pow((observed_value - (target-1)/-2),2) / (2 * math.pow(sigma,2)))
+    result = (proby_givenx * probx_givenx)/(proby_givenx * probx_givenx + proby_givenmx * probmx_givenx)
+    # print(target,nei_similarity,observed_value,result)
+    return result
+
 def icm(y):
     x = init(y)
     rows = len(y)
@@ -83,6 +97,30 @@ def icm(y):
                 ori = x[m][n]
                 nei = [x[i] for i in neighbours(m,n,rows,cols)]
                 if prob(1,nei,y[m][n]) > prob(-1,nei,y[m][n]):
+                    x[m][n] = 1
+                else:
+                    x[m][n] = -1
+                if flag and (x[m][n] != ori):
+                    flag = False
+        if flag:
+            print('stop in loop ', i)
+            return x
+    return x
+
+def gibbs(y):
+    x = init(y)
+    rows = len(y)
+    cols = len(y[0])  # assume not empty
+    PASS = 100
+    for i in range(PASS):
+        flag = True
+        for m in range(rows):
+            for n in range(cols):
+                ori = x[m][n]
+                nei = [x[i] for i in neighbours(m, n, rows, cols)]
+                prob = prob_gibbs(1, nei, y[m][n])
+                t = np.random.rand()
+                if t < prob:
                     x[m][n] = 1
                 else:
                     x[m][n] = -1
@@ -107,7 +145,7 @@ def init(im_noise):
 
 # proportion of pixels to alter
 prop = 0.7
-varSigma = 1
+varSigma = 0.1
 im = imread('../pic/pug_grey.jpg')
 im = im/255
 fig = plt.figure()
@@ -117,7 +155,8 @@ im_noise = add_gaussian_noise(im,prop,varSigma)
 #im_noise = add_saltnpeppar_noise(im,prop)
 ax2 = fig.add_subplot(132)
 ax2.imshow(im_noise,cmap='gray')
-x_im = icm(im_noise)
+# x_im = icm(im_noise)
+x_im = gibbs(im_noise)
 ax3 = fig.add_subplot(133)
 ax3.imshow(x_im,cmap='gray')
 plt.show()
