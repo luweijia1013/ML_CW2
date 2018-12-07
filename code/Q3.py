@@ -197,7 +197,7 @@ def init(im_noise):
 # proportion of pixels to alter
 prop = 0.7
 varSigma = 0.5
-im = imread('../pic/pug2_grey.png')
+im = imread('../pic/char_grey.png')
 im = im/255
 fig = plt.figure()
 ax = fig.add_subplot(151)
